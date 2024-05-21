@@ -22,12 +22,14 @@ class PartialParse(object):
         ### Your code should initialize the following fields:
         ###     self.stack: The current stack represented as a list with the top of the stack as the
         ###                 last element of the list.
+        self.stack = ["ROOT"]
         ###     self.buffer: The current buffer represented as a list with the first item on the
         ###                  buffer as the first item of the list
+        self.buffer = list(sentence)
         ###     self.dependencies: The list of dependencies produced so far. Represented as a list of
         ###             tuples where each tuple is of the form (head, dependent).
         ###             Order for this list doesn't matter.
-        ###
+        self.dependencies = []
         ### Note: The root token should be represented with the string "ROOT"
         ### Note: If you need to use the sentence object to initialize anything, make sure to not directly 
         ###       reference the sentence object.  That is, remember to NOT modify the sentence object. 
@@ -48,9 +50,35 @@ class PartialParse(object):
         ###     Implement a single parsing step, i.e. the logic for the following as
         ###     described in the pdf handout:
         ###         1. Shift
-        ###         2. Left Arc
-        ###         3. Right Arc
+        if transition == 'S':
+          # obtain the first item of the buffer
+          first_item = self.buffer.pop(0)
 
+          # add that to the word to the stack
+          self.stack.append(first_item)
+
+        ###         2. Left Arc
+        elif transition == 'LA':
+          # obtain second item from stack and set as dependent
+          second_word = self.stack.pop(-2) # obtains second item from right side of stack
+
+          # obtain the first word of the dependency
+          first_word = self.stack[-1] # obtains first item from right side of stack
+
+          # add the words to the dependencies list
+          self.dependencies.append((first_word, second_word))
+
+    
+        ###         3. Right Arc
+        elif transition == 'RA':
+          # obtain the first word of the stack and set as dependent
+          first_word = self.stack.pop(-1)
+
+          # obtain second word of the dependency
+          second_word = self.stack[-1] # obtain second item (first item is already deleted)
+
+          # add the words to the dependencies list
+          self.dependencies.append((second_word, first_word))
 
         ### END YOUR CODE
 
@@ -87,6 +115,43 @@ def minibatch_parse(sentences, model, batch_size):
                                                     contain the parse for sentences[i]).
     """
     dependencies = []
+
+    # create a list of PartialParses 
+    partial_parses = []
+    # create one parser for each sentence in sentences
+    for sentence in sentences:
+      partial_parses.append(PartialParse(sentence))
+
+    # create the unfinished parses
+    unfinished_parses = partial_parses[:] #  a shallow copy of partial parses
+
+    # Process unfinished parses until all are completed
+    while unfinished_parses:
+
+        # create minibatch from the first batch size parses in unfinished parses
+        minibatch = unfinished_parses[:batch_size]
+
+        # predict the next transition for each partial parse in the minibatch
+        predicted_transitions = model.predict(minibatch) # use the model to make predictions
+
+        # loop over each partial parse in the minibatch with the predicted transition
+        for partial_parse, transition in zip(minibatch, predicted_transitions):
+          # Perform a parse step on each partial parse
+            partial_parse.parse_step(transition)
+
+            # Remove the completed parses from unfinished parses
+            # obtain empty buffer and stack of size 1
+            if len(partial_parse.buffer) == 0 and len(partial_parse.stack) == 1:
+              #remove from unfinished parses
+                unfinished_parses.remove(partial_parse)
+
+    # create a list of dependencies for each completed parse
+    dependencies = []
+    for partial_parse in partial_parses:
+        dependencies.append(partial_parse.dependencies)
+
+
+
 
     ### YOUR CODE HERE (~8-10 Lines)
     ### TODO:
