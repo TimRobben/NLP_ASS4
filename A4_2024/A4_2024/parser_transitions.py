@@ -116,41 +116,6 @@ def minibatch_parse(sentences, model, batch_size):
     """
     dependencies = []
 
-    # create a list of PartialParses 
-    partial_parses = []
-    # create one parser for each sentence in sentences
-    for sentence in sentences:
-      partial_parses.append(PartialParse(sentence))
-
-    # create the unfinished parses
-    unfinished_parses = partial_parses[:] #  a shallow copy of partial parses
-
-    # Process unfinished parses until all are completed
-    while unfinished_parses:
-
-        # create minibatch from the first batch size parses in unfinished parses
-        minibatch = unfinished_parses[:batch_size]
-
-        # predict the next transition for each partial parse in the minibatch
-        predicted_transitions = model.predict(minibatch) # use the model to make predictions
-
-        # loop over each partial parse in the minibatch with the predicted transition
-        for partial_parse, transition in zip(minibatch, predicted_transitions):
-          # Perform a parse step on each partial parse
-            partial_parse.parse_step(transition)
-
-            # Remove the completed parses from unfinished parses
-            # obtain empty buffer and stack of size 1
-            if len(partial_parse.buffer) == 0 and len(partial_parse.stack) == 1:
-              #remove from unfinished parses
-                unfinished_parses.remove(partial_parse)
-
-    # create a list of dependencies for each completed parse
-    dependencies = []
-    for partial_parse in partial_parses:
-        dependencies.append(partial_parse.dependencies)
-
-
 
 
     ### YOUR CODE HERE (~8-10 Lines)
@@ -166,6 +131,38 @@ def minibatch_parse(sentences, model, batch_size):
     ###             contains references to the same objects. Thus, you should NOT use the `del` operator
     ###             to remove objects from the `unfinished_parses` list. This will free the underlying memory that
     ###             is being accessed by `partial_parses` and may cause your code to crash.
+    # create a list of PartialParses 
+    partial_parses = []
+    # create one parser for each sentence in sentences
+    for sentence in sentences:
+      partial_parses.append(PartialParse(sentence))
+
+    # create the unfinished parses
+    unfinished_parses = partial_parses[:]
+
+    # Process unfinished parses until all are completed
+    while unfinished_parses:
+
+        # create minibatch 
+        minibatch = unfinished_parses[:batch_size]
+
+        # predict the next transition for each partial parse in the minibatch
+        predicted_transitions = model.predict(minibatch)
+
+        # loop over each partial parse in the minibatch with the predicted transition
+        for partial_parse, transition in zip(minibatch, predicted_transitions):
+          # Perform a parse step on each partial parse
+            partial_parse.parse_step(transition)
+
+            # Remove the completed parses from unfinished parses
+            # obtain empty buffer and stack of size 1
+            if len(partial_parse.buffer) == 0 and len(partial_parse.stack) == 1:
+              #remove from unfinished parses
+                unfinished_parses.remove(partial_parse)
+
+    # create a list of dependencies for each completed parse
+    for partial_parse in partial_parses:
+        dependencies.append(partial_parse.dependencies)
 
 
     ### END YOUR CODE

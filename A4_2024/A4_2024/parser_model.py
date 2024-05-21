@@ -119,6 +119,7 @@ class ParserModel(nn.Module):
         ###     Gather: https://pytorch.org/docs/stable/torch.html#torch.gather
         ###     View: https://pytorch.org/docs/stable/tensors.html#torch.Tensor.view
         ###     Flatten: https://pytorch.org/docs/stable/generated/torch.flatten.html
+
         # Get embeddings for the input indices and reshape
         x = self.embeddings[w]  # (batch_size, n_features, embed_size)
         x = x.view(-1, self.n_features * self.embed_size)  # (batch_size, n_features * embed_size)
@@ -159,6 +160,7 @@ class ParserModel(nn.Module):
         ### Please see the following docs for support:
         ###     Matrix product: https://pytorch.org/docs/stable/torch.html#torch.matmul
         ###     ReLU: https://pytorch.org/docs/stable/nn.html?highlight=relu#torch.nn.functional.relu
+        
         x = self.embedding_lookup(w)
         h = F.relu(torch.matmul(x, self.embed_to_hidden_weight) + self.embed_to_hidden_bias)
         h = self.dropout(h)
